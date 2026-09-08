@@ -1,0 +1,13 @@
+# Binaries and object files
+*.o
+*.so
+qq-clip-bridge
+
+# Temporary & backup files
+*~
+*.swp
+*.bak
+.DS_Store
+
+# Logs
+*.log

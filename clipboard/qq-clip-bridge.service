@@ -1,0 +1,13 @@
+[Unit]
+Description=QQ & WeChat Wayland Clipboard Bridge Daemon
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/qq-clip-bridge
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target default.target
