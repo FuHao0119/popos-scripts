@@ -23,6 +23,8 @@ popos-scripts/
 │   ├── clean_refind_menu.sh
 │   └── uninstall_refind.sh
 ├── apps/               # 常用软件性能与体验优化配置
+│   ├── fcitx5/
+│   │   └── setup_fcitx5.sh # Fcitx5 自然码双拼、现代词库与体验一键调优
 │   ├── firefox/
 │   │   └── user.js     # Intel 核显 VA-API 4K 硬件解码加速
 │   └── flameshot/
@@ -80,6 +82,14 @@ popos-scripts/
 
 ### 4. 应用性能优化 (`apps/`)
 
+- **Fcitx5 拼音输入体验与现代词库调优 (`apps/fcitx5/setup_fcitx5.sh`)**：
+  - **解决痛点**：默认 Fcitx5 词库极度匮乏，打常用现代词和口语短语无法整词首选命中；在自然码双拼下因开启模糊音与不完整元音导致候选严重乱序；默认关闭云拼音。
+  - **优化效果**：一键部署 ~60MB 社区顶级现代词库（包含数百万生活词汇、成语俗语、中文维基百科名词、网络流行语），关闭干扰首选项的模糊规则，开启百度云拼音并置于第 2 位，配置自然码双拼并重载生效。
+  - **使用方法**：
+    ```bash
+    cd apps/fcitx5
+    ./setup_fcitx5.sh
+    ```
 - **Firefox Intel VA-API 硬件视频加速 (`apps/firefox/user.js`)**：
   - **解决痛点**：Linux 版 Firefox 默认使用 CPU 软解视频，导致观看 B站、YouTube 视频时 CPU 占用飙升至 50% 以上、笔记本发热风扇狂转。
   - **优化效果**：强制开启 Intel Iris Xe 核显专用媒体硬件解码器（支持 H.264、H.265、VP9、AV1 4K/8K），CPU 占用降至 1%~3%，功耗和发热大幅降低。
