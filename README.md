@@ -8,6 +8,9 @@
 
 ```text
 popos-scripts/
+├── power/              # 移动续航与电源深度调优（外出极度节电与日常全性能一键切换）
+│   ├── go-out-powersave.sh
+│   └── restore-power.sh
 ├── clipboard/          # QQ / 微信 Linux 原生版 Wayland 剪贴板图片粘贴桥接守护进程
 │   ├── qq-clip-bridge.c
 │   ├── wlr-data-control-unstable-v1-client-protocol.h
@@ -99,6 +102,27 @@ popos-scripts/
     ```
 - **Flameshot 启动包装器 (`apps/flameshot/flameshot`)**：
   Flameshot Flatpak 版本的命令行调用包装脚本。
+
+---
+
+### 5. 移动续航与电源深度调优 (`power/`)
+- **解决痛点**：搭载 Intel 12代标压酷睿（如 i5-12500H）+ NVIDIA 独显的高刷游戏本在 Linux (Pop!_OS / COSMIC) 环境下离电功耗极高（常态待机高达 20W~26W），导致 50Wh 左右电池轻度使用仅能坚持 1~1.5 小时。
+- **技术原理**：
+  1. **显卡与显示**：一键切换至 `integrated` 纯核显模式切断独显供电，并将 2.5K 屏幕刷新率从 165Hz 瞬时无缝切至 60Hz。
+  2. **处理器深度节能**：调用 `system76-power` 将配置文件切至 `battery`（禁用 CPU Turbo 睿频），设置 CPU EPP (Energy Performance Preference) 为 `power` 模式抑制瞬时升频与电压尖峰。
+  3. **架构漏电压制**：通过内核 SMT 控制接口关闭大核超线程，保留 4 个性能大核物理核心 + 8 个能效小核（共 12 物理核心），大幅削减空闲漏电同时确保多任务依然充沛流畅。
+  4. **总线与外设休眠**：将长江存储 PC300 等 NVMe 固态硬盘与所有 PCI 设备电源控制切至 `auto` 开启 APST，启用 PCIe ASPM `powersave` 策略打通 CPU Package 深睡眠状态（C8/C10），并断开未插线的有线网卡。
+- **使用方法**：
+  - **出门前一键开启极致节电**：
+    ```bash
+    ./power/go-out-powersave.sh
+    ```
+    *注：若显卡模式从混合模式切至纯核显，建议按提示重启一次电脑以彻底切断 RTX 独显供电。整机离电功耗可降至 9W~11W，轻度使用续航提升至 3.5~4 小时。*
+  - **回家插电一键恢复全性能模式**：
+    ```bash
+    ./power/restore-power.sh
+    ```
+    *注：屏幕瞬时切回 165Hz 高刷、恢复 Balanced 平衡模式与全部 16 线程；显卡模式切回 hybrid（重启后独显恢复满血工作）。*
 
 ---
 
