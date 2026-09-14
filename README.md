@@ -30,8 +30,10 @@ popos-scripts/
 │   │   └── setup_fcitx5.sh # Fcitx5 自然码双拼、现代词库与体验一键调优
 │   ├── firefox/
 │   │   └── user.js     # Intel 核显 VA-API 4K 硬件解码加速
-│   └── flameshot/
-│       └── flameshot   # Flameshot 截图工具启动包装器
+│   ├── flameshot/
+│   │   └── flameshot   # Flameshot 截图工具启动包装器
+│   └── wechat/
+│       └── fix-wechat-ime.sh # Linux 官方微信输入法候选框固定左上方/不跟随光标修复脚本
 ├── .gitignore
 └── README.md
 ```
@@ -102,6 +104,20 @@ popos-scripts/
     ```
 - **Flameshot 启动包装器 (`apps/flameshot/flameshot`)**：
   Flameshot Flatpak 版本的命令行调用包装脚本。
+- **Linux 微信输入法候选框位置修复 (`apps/wechat/fix-wechat-ime.sh`)**：
+  - **解决痛点**：在 Pop!_OS 24.04 (COSMIC Desktop / Wayland) 环境下使用原生 Linux 官方微信打字时，Fcitx5 输入法候选词框无法跟随打字光标，而是死死固定在屏幕左上方固定点（如 `+323+506` 区域），无论把微信窗口拖动到屏幕何处，候选框都完全不会跟随。
+  - **根本原因剖析**：
+    1. 系统环境默认配置了 `QT_QPA_PLATFORM=wayland;xcb`，导致微信优先作为原生 Wayland 客户端启动；
+    2. 微信内置的 `fcitx-qt5` 插件在计算光标位置时调用了 `mapToGlobal()`；
+    3. 在 Wayland 协议的安全隔离限制下，普通客户端无法获取屏幕全局坐标，`mapToGlobal()` 失败退化，返回了输入框在微信窗口内部的局部相对坐标（如 `323, 506`）；
+    4. 微信把此局部坐标误当成全局屏幕坐标通过 D-Bus 发送给 Fcitx5，导致 Fcitx5 将候选窗口硬编码绘制在屏幕物理像素 `(323, 506)` 处。由于输入框相对于微信窗口左上角的偏移是恒定不变的，导致候选框呈现出“永远死死钉在左上方”的现象。
+  - **修复原理**：启动微信时清空 `WAYLAND_DISPLAY` 并强制 `QT_QPA_PLATFORM=xcb`，使微信彻底作为真正的 X11 (XWayland) 顶层窗口运行。此时 `mapToGlobal()` 能通过 X11 的 `XTranslateCoordinates` 正确换算真实的全局屏幕坐标，Fcitx5 候选框即可实时跟随窗口移动并精准贴合打字光标。
+  - **使用方法**：
+    ```bash
+    cd apps/wechat
+    ./fix-wechat-ime.sh
+    ```
+    *注：若需还原为系统默认配置，可执行 `./fix-wechat-ime.sh --uninstall`。*
 
 ---
 
