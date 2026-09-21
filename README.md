@@ -32,6 +32,10 @@ popos-scripts/
 │   │   └── user.js     # Intel 核显 VA-API 4K 硬件解码加速
 │   ├── flameshot/
 │   │   └── flameshot   # Flameshot 截图工具启动包装器
+│   ├── satty/          # Satty 截图与标注工具在 COSMIC Wayland 下的完整方案与踩坑修复
+│   │   ├── setup_satty.sh    # 一键安装、升级 grim 1.5.0、配置快捷键与防挂起脚本
+│   │   ├── satty-screenshot  # 智能启动包装器（自动嗅探 Wayland 套接字、隔离 stdin 防死锁）
+│   │   └── config.toml       # 预设中文字体回退、Enter 复制即退、截图存储路径优化配置
 │   └── wechat/
 │       └── fix-wechat-ime.sh # Linux 官方微信输入法候选框固定左上方/不跟随光标修复脚本
 ├── .gitignore
@@ -104,6 +108,23 @@ popos-scripts/
     ```
 - **Flameshot 启动包装器 (`apps/flameshot/flameshot`)**：
   Flameshot Flatpak 版本的命令行调用包装脚本。
+- **Satty 现代截图与标注工具部署 (`apps/satty/setup_satty.sh`)**：
+  - **解决痛点**：在 Pop!_OS 24.04 (COSMIC Desktop / Wayland) 环境下，传统截图工具（如 Flameshot / ksnip）体验欠佳，而 Wayland 原生的 `grim` + `slurp` + `satty` 组合在 COSMIC 下存在三大隐蔽坑点：
+    1. **协议不兼容**：官方源自带的 `grim 1.4.0` 仅支持旧版 `wlr-screencopy` 协议，而 COSMIC 合成器 (`cosmic-comp`) 仅实现了更新的 `ext-image-copy-capture-v1` 标准，导致直接报错 `compositor doesn't support wlr-screencopy-unstable-v1` 无法截图；
+    2. **快捷键管道死锁挂起**：通过桌面全局快捷键唤起时，标准输入（stdin）为非交互式管道，`slurp` 默认会一直卡在 `read()` 等待外界输入预设矩形（`anon_pipe_read`），导致屏幕毫无反应且后台堆积大量卡死进程；
+    3. **合成器后台无环境变量**：`cosmic-comp` 直接 Spawn 启动的快捷键子进程未继承 `WAYLAND_DISPLAY` 环境变量，导致子进程尝试连接默认错误的 `wayland-0` 套接字失败退出。
+  - **优化与修复原理**：
+    1. 自动升级 `grim` 至 >= 1.5.0 版本，打通 `ext-image-copy-capture-v1` 协议支持；
+    2. 部署与 Pop!_OS 24.04 (GLIBC 2.39) 兼容的 `satty` (v0.20.1) 现代标注程序（支持画笔、箭头、矩形、文字、马赛克高斯模糊等）；
+    3. 编写 `satty-screenshot` 包装器，自动嗅探 `/run/user/$UID/wayland-*` 挂载真实的活动 `WAYLAND_DISPLAY`，并在非 TTY 下重定向 `slurp < /dev/null` 彻底解决挂起，增加防重入互斥与 `--full` 全屏截图支持；
+    4. 自动写入 `~/.config/satty/config.toml`，配置 `Noto Sans CJK SC` 中文字体回退、按 `Enter` 或 `Ctrl+C` 复制即退、保存路径设为 `~/Pictures/Screenshots/`；
+    5. 自动向 COSMIC 自定义快捷键注入 `Super + Shift + S` 与 `Ctrl + Alt + A`。
+  - **使用方法**：
+    ```bash
+    cd apps/satty
+    ./setup_satty.sh
+    ```
+    *注：若需彻底卸载，可执行 `./setup_satty.sh --uninstall`。*
 - **Linux 微信输入法候选框位置修复 (`apps/wechat/fix-wechat-ime.sh`)**：
   - **解决痛点**：在 Pop!_OS 24.04 (COSMIC Desktop / Wayland) 环境下使用原生 Linux 官方微信打字时，Fcitx5 输入法候选词框无法跟随打字光标，而是死死固定在屏幕左上方固定点（如 `+323+506` 区域），无论把微信窗口拖动到屏幕何处，候选框都完全不会跟随。
   - **根本原因剖析**：

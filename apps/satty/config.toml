@@ -1,0 +1,44 @@
+# Satty 配置文件 (针对 Pop!_OS 24.04 COSMIC Wayland 调优)
+[general]
+fullscreen = false
+floating-hack = true
+early-exit = true
+early-exit-save-as = true
+corner-roundness = 4
+initial-tool = "pointer"
+copy-command = "wl-copy"
+annotation-size-factor = 1.0
+output-filename = "~/Pictures/Screenshots/satty_%Y%m%d_%H%M%S.png"
+save-after-copy = false
+default-hide-toolbars = false
+focus-toggles-toolbars = false
+default-fill-shapes = false
+primary-highlighter = "block"
+disable-notifications = false
+actions-on-enter = ["save-to-clipboard", "exit"]
+actions-on-escape = ["exit"]
+no-window-decoration = false
+brush-smooth-history-size = 5
+
+[keybinds]
+pointer = "p"
+crop = "c"
+brush = "b"
+line = "i"
+arrow = "z"
+rectangle = "r"
+ellipse = "e"
+text = "t"
+marker = "m"
+blur = "u"
+highlight = "g"
+
+[font]
+family = "Noto Sans CJK SC"
+style = "Regular"
+fallback = [
+    "Noto Sans CJK SC",
+    "Noto Sans CJK TC",
+    "Noto Sans",
+    "sans-serif"
+]

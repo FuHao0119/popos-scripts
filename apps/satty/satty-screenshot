@@ -1,0 +1,39 @@
+#!/bin/bash
+# ==============================================================================
+# Satty Screenshot Wrapper for Pop!_OS 24.04 (COSMIC Desktop / Wayland)
+# ==============================================================================
+
+# Ensure proper Wayland environment variables when spawned by compositor shortcuts
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export PATH="${HOME}/.local/bin:/usr/local/bin:/usr/bin:$PATH"
+
+if [ -z "$WAYLAND_DISPLAY" ]; then
+    for sock in "$XDG_RUNTIME_DIR"/wayland-*; do
+        if [ -S "$sock" ]; then
+            export WAYLAND_DISPLAY=$(basename "$sock")
+            break
+        fi
+    done
+fi
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
+
+# Fullscreen mode
+if [ "$1" = "--full" ] || [ "$1" = "-f" ]; then
+    grim - | satty --filename -
+    exit 0
+fi
+
+# Kill any stale slurp instance to avoid duplicate overlays
+killall -q slurp 2>/dev/null || true
+
+# IMPORTANT: slurp MUST redirect stdin from /dev/null when run non-interactively!
+# If stdin is an open pipe (as created by desktop shortcut launchers), slurp blocks
+# waiting for predefined rectangles from stdin forever.
+GEOM=$(slurp < /dev/null 2>/dev/null)
+RET=$?
+
+if [ $RET -ne 0 ] || [ -z "$GEOM" ]; then
+    exit 0
+fi
+
+grim -g "$GEOM" - | satty --filename -
