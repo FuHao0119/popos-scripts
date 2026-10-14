@@ -10,7 +10,8 @@
 popos-scripts/
 ├── power/              # 移动续航与电源深度调优（外出极度节电与日常全性能一键切换）
 │   ├── go-out-powersave.sh
-│   └── restore-power.sh
+│   ├── restore-power.sh
+│   └── lid-switch.sh # 合盖策略一键切换（挂机不断网 ↔ 日常合盖挂起）
 ├── clipboard/          # QQ / 微信 Linux 原生版 Wayland 剪贴板图片粘贴桥接守护进程
 │   ├── qq-clip-bridge.c
 │   ├── wlr-data-control-unstable-v1-client-protocol.h
@@ -160,6 +161,21 @@ popos-scripts/
     ./power/restore-power.sh
     ```
     *注：屏幕瞬时切回 165Hz 高刷、恢复 Balanced 平衡模式与全部 16 线程；显卡模式切回 hybrid（重启后独显恢复满血工作）。*
+- **合盖策略一键切换 (`power/lid-switch.sh`)**：
+  - **解决痛点**：合盖挂机跑 agent / 下载时，需要盒盖保持联网运行；而日常携带又希望合盖即挂起省电。手动改 `/etc/systemd/logind.conf` 的三个 `HandleLidSwitch` 参数并重载 logind 太繁琐。
+  - **技术原理**：切换 `systemd-logind` 的 `HandleLidSwitch` / `HandleLidSwitchExternalPower` / `HandleLidSwitchDocked` 三项，改完 `systemctl reload systemd-logind` 即时生效，最后通过 D-Bus 读回实际生效值校验。
+  - **两种模式**：
+    - **挂机模式**（三项全部 `ignore`）：合盖不挂起、不断网，适合后台跑任务。
+    - **日常模式**（三项注释掉，回落系统默认）：合盖即挂起断网，省电。
+  - **使用方法**：
+    ```bash
+    # 无参数：检测当前模式并自动切到另一边
+    ./power/lid-switch.sh
+    # 或显式指定
+    ./power/lid-switch.sh keepawake   # 挂机模式（合盖不断网）
+    ./power/lid-switch.sh default     # 日常模式（合盖挂起）
+    ```
+    *注：需输入一次 sudo 密码；脚本会自动校验 D-Bus 返回的生效值，切换失败会明确提示。*
 
 ---
 
