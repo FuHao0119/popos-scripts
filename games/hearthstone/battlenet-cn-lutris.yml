@@ -1,0 +1,120 @@
+# 国服战网 Lutris 安装脚本
+# 来源：Wine游戏助手 (winegame.net)「02. 国服（纯64位wine+DXVK）」脚本
+#       https://winegame.net/games/battlenet （作者：老虎会游泳）
+# 修改：移除守望先锋着色器缓存相关步骤，其余保持原样
+# 用法：lutris -i battlenet-cn-lutris.yml
+name: Blizzard Battle.net | 暴雪战网客户端
+version: 02. 国服（纯64位wine+DXVK）
+runner: wine
+game_slug: battlenet
+slug: blizzard-battlenet-02-64winedxvk
+script:
+  custom-name: 暴雪战网国服
+  files:
+  - setup:
+      filename: Battle.net-Setup-CN.exe
+      url: https://downloader.battlenet.com.cn/download/getInstallerForGame?os=win&gameProgram=BATTLENET_APP&version=Live
+  - wineinit: https://file.winegame.net/games/common/wineinit.sh
+  - cmdfonts: https://file.winegame.net/cache/wine/fonts/MicrosoftYaHeiMono-20221214.tar.xz
+  game:
+    arch: win64
+    exe: drive_c/Program Files (x86)/Battle.net/Battle.net.exe
+    prefix: $GAMEDIR
+  installer:
+  - execute:
+      command: bash "$wineinit" win64
+      description: 下载字体和运行库
+  - task:
+      arch: win64
+      description: 创建64位Wine前缀
+      name: create_prefix
+      prefix: $GAMEDIR
+  - extract:
+      description: 解压中文字体
+      dst: $GAMEDIR/drive_c/windows/Fonts
+      file: cmdfonts
+  - task:
+      arch: win64
+      description: 安装中文字体
+      filename: $GAMEDIR/drive_c/windows/Fonts/MicrosoftYaHeiMono.reg
+      name: set_regedit_file
+  - execute:
+      command: rm -f "$GAMEDIR/dosdevices/m::"; ln -sf "$HOME" "$GAMEDIR/dosdevices/m:"
+      description: 添加主目录($HOME)为M盘
+  - write_file:
+      content: 'dxgi.nvapiHack = False
+
+        [Overwatch.exe]
+
+        dxvk.hud = compiler'
+      file: $GAMEDIR/dxvk.conf
+  - write_json:
+      data:
+        Client:
+          GameLaunchWindowBehavior: '0'
+          GameSearch:
+            BackgroundSearch: 'true'
+          HardwareAcceleration: 'false'
+          HideOnClose: 'false'
+          Sound:
+            Enabled: 'false'
+          Streaming:
+            StreamingEnabled: 'false'
+      description: 写入 Battle.Net 配置文件（关闭硬件加速，修复登录按钮不显示）
+      file: $GAMEDIR/drive_c/users/$USER/Application Data/Battle.net/Battle.net.config
+  - write_file:
+      content: hasseennewcinematic=True
+      description: 修复炉石传说启动问题
+      file: $GAMEDIR/drive_c/users/$USER/Local Settings/Application Data/Blizzard/Hearthstone/options.txt
+  - task:
+      arch: win64
+      description: 'Wine Staging: 启用 DXVA2'
+      key: backend
+      name: set_regedit
+      path: HKEY_CURRENT_USER\Software\Wine\DXVA2
+      prefix: $GAMEDIR
+      value: va
+  - task:
+      name: winekill
+      prefix: $GAMEDIR
+  - task:
+      arch: win64
+      description: 禁止窗口管理器装饰窗口
+      key: Decorated
+      name: set_regedit
+      path: HKEY_CURRENT_USER\Software\Wine\X11 Driver
+      prefix: $GAMEDIR
+      type: REG_SZ
+      value: 'N'
+  - task:
+      name: winekill
+      prefix: $GAMEDIR
+  - task:
+      description: "战网安装程序即将打开。\n------------------------------\n请在安装程序中完成战网安装。\n注意，一定要安装到默认路径，不要安装到任何其他位置，否则程序会认为安装失败！\n不必登录客户端，安装完成后关闭安装程序即可。"
+      exclude_processes: Battle.net.exe Agent.exe "Battle.net Helper.exe" wineconsole explorer.exe conhost.exe svchost.exe
+      executable: setup
+      name: wineexec
+  - task:
+      name: winekill
+      prefix: $GAMEDIR
+  system:
+    env:
+      DXVK_CONFIG_FILE: $GAMEDIR/dxvk.conf
+      DXVK_STATE_CACHE_PATH: $GAMEDIR
+      STAGING_SHARED_MEMORY: '1'
+      __GL_SHADER_DISK_CACHE: '1'
+      __GL_SHADER_DISK_CACHE_PATH: $GAMEDIR
+    exclude_processes: Agent.exe "Battle.net Helper.exe"
+  wine:
+    dxvk: true
+    esync: true
+    overrides:
+      d3dcompiler_47: native,builtin
+      d3dcsx_47: native,builtin
+      d3dx11_42: native,builtin
+      d3dx9_42: native,builtin
+      locationapi: disabled
+      winedbg.exe: disabled
+      winemenubuilder.exe: disabled
+    version: wine-tkg-ntsync-10.13-wow64-x86_64
+    vkd3d: true
